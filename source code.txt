@@ -1,0 +1,64 @@
+#include <DHT.h>
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
+// Pin definitions
+#define DHTPIN D3           
+#define DHTTYPE DHT11       
+#define RAIN_SENSOR_PIN A0  
+#define GAS_SENSOR_PIN A0   
+
+// Sensor initialization
+DHT dht(DHTPIN, DHTTYPE);
+LiquidCrystal_I2C lcd(0x27, 16, 2); // LCD I2C address
+
+void setup() {
+  Serial.begin(115200);
+
+  // Initialize sensors
+  dht.begin();
+  
+  // Initialize LCD
+  lcd.begin();
+  lcd.backlight();
+  lcd.setCursor(0, 0);
+  lcd.print("Weather Monitor");
+  delay(2000);
+  lcd.clear();
+}
+
+void loop() {
+  // Read from DHT11
+  float temperature = dht.readTemperature();
+  float humidity = dht.readHumidity();
+
+  // Read rain sensor
+  int rainAnalog = analogRead(RAIN_SENSOR_PIN);
+  int rainPercentage = map(rainAnalog, 0, 1024, 100, 0); // 0 = dry, 100 = wet
+  rainPercentage = constrain(rainPercentage, 0, 100);
+
+  // Rain status
+  String rainStatus;
+  if (rainPercentage < 10) rainStatus = "No Rain";
+  else if (rainPercentage < 60) rainStatus = "Drizzle";
+  else rainStatus = "Heavy Rain";
+
+  // Read gas sensor
+  int gasValue = analogRead(GAS_SENSOR_PIN);
+
+  // Display on Serial Monitor
+  Serial.print("Temp: "); Serial.print(temperature); Serial.print(" C, ");
+  Serial.print("Humidity: "); Serial.print(humidity); Serial.print(" %, ");
+  Serial.print("Rain: "); Serial.print(rainPercentage); Serial.print(" %, ");
+  Serial.print("Gas: "); Serial.println(gasValue);
+
+  // Display on LCD
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("T:" + String(temperature, 1) + " H:" + String(humidity, 0) + "%");
+
+  lcd.setCursor(0, 1);
+  lcd.print("R:" + String(rainPercentage) + "% " + rainStatus);
+
+  delay(5000); // Update every 5 seconds
+}
